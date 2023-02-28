@@ -1,15 +1,6 @@
 # omp-bot
 
-### Как запускать
+### task
 
-Сперва добавьте токен своего бота в .env:
+https://github.com/ozonmp/omp-docs/blob/main/task-1.md
 
-```
-TOKEN=<здесь_ваш_токен_от_botfather>
-```
-
-И запустите:
-
-```
-make run
-```

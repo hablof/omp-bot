@@ -11,3 +11,7 @@ var allEntities = []Subdomain{
 type Subdomain struct {
 	Title string
 }
+
+func (s *Subdomain) String() string {
+	return s.Title
+}

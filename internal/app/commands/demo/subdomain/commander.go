@@ -4,8 +4,8 @@ import (
 	"log"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/ozonmp/omp-bot/internal/app/path"
-	"github.com/ozonmp/omp-bot/internal/service/demo/subdomain"
+	"github.com/hablof/omp-bot/internal/app/path"
+	"github.com/hablof/omp-bot/internal/service/demo/subdomain"
 )
 
 type DemoSubdomainCommander struct {
@@ -13,9 +13,7 @@ type DemoSubdomainCommander struct {
 	subdomainService *subdomain.Service
 }
 
-func NewDemoSubdomainCommander(
-	bot *tgbotapi.BotAPI,
-) *DemoSubdomainCommander {
+func NewDemoSubdomainCommander(bot *tgbotapi.BotAPI) *DemoSubdomainCommander {
 	subdomainService := subdomain.NewService()
 
 	return &DemoSubdomainCommander{
