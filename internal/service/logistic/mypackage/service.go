@@ -14,12 +14,12 @@ type PackageService interface {
 	Remove(packageID uint64) (bool, error)
 }
 
-var _ PackageService = DummyPackageService{}
+var _ PackageService = &DummyPackageService{}
 
 type DummyPackageService struct{}
 
 // Create implements PackageService
-func (DummyPackageService) Create(unit logistic.Package) (uint64, error) {
+func (*DummyPackageService) Create(unit logistic.Package) (uint64, error) {
 
 	logistic.AllEntities = append(logistic.AllEntities, &unit)
 
@@ -27,7 +27,7 @@ func (DummyPackageService) Create(unit logistic.Package) (uint64, error) {
 }
 
 // Describe implements PackageService
-func (DummyPackageService) Describe(packageID uint64) (*logistic.Package, error) {
+func (*DummyPackageService) Describe(packageID uint64) (*logistic.Package, error) {
 
 	if !logistic.CheckInbounds(packageID) {
 		return nil, fmt.Errorf("index out of bounds")
@@ -37,7 +37,7 @@ func (DummyPackageService) Describe(packageID uint64) (*logistic.Package, error)
 }
 
 // List implements PackageService
-func (DummyPackageService) List(cursor uint64, limit uint64) ([]logistic.Package, error) {
+func (*DummyPackageService) List(cursor uint64, limit uint64) ([]logistic.Package, error) {
 
 	output := make([]logistic.Package, 0, limit)
 
@@ -46,8 +46,8 @@ func (DummyPackageService) List(cursor uint64, limit uint64) ([]logistic.Package
 	}
 
 	var rightBorder uint64
-	if cursor-1+limit >= uint64(len(logistic.AllEntities)) {
-		rightBorder = uint64(len(logistic.AllEntities)) - 1
+	if cursor-1+limit > uint64(len(logistic.AllEntities)) {
+		rightBorder = uint64(len(logistic.AllEntities))
 	} else {
 		rightBorder = cursor - 1 + limit
 	}
@@ -60,7 +60,7 @@ func (DummyPackageService) List(cursor uint64, limit uint64) ([]logistic.Package
 }
 
 // Remove implements PackageService
-func (DummyPackageService) Remove(packageID uint64) (bool, error) {
+func (*DummyPackageService) Remove(packageID uint64) (bool, error) {
 	if !logistic.CheckInbounds(packageID) {
 		return false, fmt.Errorf("index out of bounds")
 	}
@@ -70,7 +70,7 @@ func (DummyPackageService) Remove(packageID uint64) (bool, error) {
 }
 
 // Update implements PackageService
-func (DummyPackageService) Update(packageID uint64, mypackage logistic.Package) error {
+func (*DummyPackageService) Update(packageID uint64, mypackage logistic.Package) error {
 	if !logistic.CheckInbounds(packageID) {
 		return fmt.Errorf("index out of bounds")
 	}

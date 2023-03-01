@@ -6,6 +6,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/hablof/omp-bot/internal/app/commands/demo"
+	"github.com/hablof/omp-bot/internal/app/commands/logistic"
 	"github.com/hablof/omp-bot/internal/app/path"
 )
 
@@ -42,7 +43,7 @@ type Router struct {
 	// rating
 	// security
 	// cinema
-	// logistic
+	logistic Commander
 	// product
 	// education
 }
@@ -77,7 +78,7 @@ func NewRouter(
 		// rating
 		// security
 		// cinema
-		// logistic
+		logistic: logistic.NewLogisticCommander(bot),
 		// product
 		// education
 	}
@@ -153,7 +154,7 @@ func (c *Router) handleCallback(callback *tgbotapi.CallbackQuery) {
 	case "cinema":
 		break
 	case "logistic":
-		break
+		c.logistic.HandleCallback(callback, callbackPath)
 	case "product":
 		break
 	case "education":
@@ -224,7 +225,7 @@ func (c *Router) handleMessage(msg *tgbotapi.Message) {
 	case "cinema":
 		break
 	case "logistic":
-		break
+		c.logistic.HandleCommand(msg, commandPath)
 	case "product":
 		break
 	case "education":

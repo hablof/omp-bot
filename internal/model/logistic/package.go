@@ -6,6 +6,11 @@ var AllEntities = []*Package{
 	{Title: "Конверт"},
 	{Title: "Пачка"},
 	{Title: "Банка"},
+	{Title: "Коробка для конфет"},
+	{Title: "Ящик для конфет"},
+	{Title: "Конверт для тонких конфет"},
+	{Title: "Пачка для конфет"},
+	{Title: "Банка для конфет"},
 }
 
 type Package struct {
