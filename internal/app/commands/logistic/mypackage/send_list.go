@@ -58,5 +58,4 @@ func (pc *MypackageCommander) sendList(offset int, inputMsg *tgbotapi.Message) {
 	if _, err := pc.bot.Send(msg); err != nil {
 		log.Printf("MypackageCommander.sendList: error sending reply message to chat - %v", err)
 	}
-	return
 }
