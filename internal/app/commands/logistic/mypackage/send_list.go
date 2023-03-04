@@ -18,7 +18,7 @@ func (pc *MypackageCommander) sendList(offset int, inputMsg *tgbotapi.Message) {
 		return
 	}
 
-	outputMsgText := "Here all the products: \n"
+	outputMsgText := "Here all the packages: \n"
 	for i, p := range products {
 		outputMsgText += fmt.Sprintf("\n%d. ", i+1+offset)
 		outputMsgText += p.Title
