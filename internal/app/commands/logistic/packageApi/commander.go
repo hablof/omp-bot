@@ -1,6 +1,7 @@
 package packageApi
 
 import (
+	"errors"
 	"log"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -26,6 +27,8 @@ type PackageService interface {
 	Update(packageID uint64, editMap map[string]string) error
 	Remove(packageID uint64) (bool, error)
 }
+
+var ErrBadRequest = errors.New("bad request")
 
 type MypackageCommander struct {
 	bot            *tgbotapi.BotAPI
