@@ -11,16 +11,16 @@ import (
 	"github.com/hablof/omp-bot/internal/model/logistic"
 )
 
-// New implements PackageCommander
-func (pc *MypackageCommander) New(inputMsg *tgbotapi.Message) {
+// Create implements PackageCommander
+func (pc *MypackageCommander) Create(inputMsg *tgbotapi.Message) {
 	args := strings.Split(inputMsg.CommandArguments(), ";")
 
 	// количестпо полей, не считая поле ID
 	if len(args) != logistic.PackageFieldsCount-1 {
 		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, "неверное количество аргументов")); err != nil {
-			log.Debug().Err(err).Msg("MypackageCommander.New: error sending reply message to chat")
+			log.Debug().Err(err).Msg("MypackageCommander.Create: error sending reply message to chat")
 		}
-		log.Debug().Msg("MypackageCommander.New: wrong args count")
+		log.Debug().Msg("MypackageCommander.Create: wrong args count")
 
 		return
 	}
@@ -42,7 +42,7 @@ func (pc *MypackageCommander) New(inputMsg *tgbotapi.Message) {
 			createArgMap[logistic.Reusable] = strings.TrimSpace(strings.TrimPrefix(arg, logistic.Reusable))
 
 		default:
-			log.Debug().Msgf("MypackageCommander.Edit: unknown argument: %s", arg)
+			log.Debug().Msgf("MypackageCommander.Create: unknown argument: %s", arg)
 			pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, fmt.Sprintf("Неизвестный аргумент: \"%s\"", arg)))
 
 			return
@@ -53,21 +53,23 @@ func (pc *MypackageCommander) New(inputMsg *tgbotapi.Message) {
 	id, err := pc.packageService.Create(createArgMap)
 	switch {
 	case errors.Is(err, ErrBadRequest):
-		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, "некорректный запрос")); err != nil {
-			log.Debug().Err(err).Msg("MypackageCommander.New: error sending reply message to chat")
+		log.Debug().Err(err).Msg("packageService.Create failed")
+		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, badRequestMsg)); err != nil {
+			log.Debug().Err(err).Msg("MypackageCommander.Create: error sending reply message to chat")
 		}
 		return
 
 	case err != nil:
-		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, "🤡🤡🤡 Ошибка сервиса 🤡🤡🤡")); err != nil {
-			log.Debug().Err(err).Msg("MypackageCommander.New: error sending reply message to chat")
+		log.Debug().Err(err).Msg("packageService.Create failed")
+		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, serviceErrMsg)); err != nil {
+			log.Debug().Err(err).Msg("MypackageCommander.Create: error sending reply message to chat")
 		}
 		return
 	}
 
-	log.Debug().Msgf("MypackageCommander.New: package id %d created", id)
+	log.Debug().Msgf("MypackageCommander.Create: package id %d created", id)
 
 	if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, fmt.Sprintf("New package id: %d", id))); err != nil {
-		log.Debug().Err(err).Msg("MypackageCommander.New: error sending reply message to chat")
+		log.Debug().Err(err).Msg("MypackageCommander.Create: error sending reply message to chat")
 	}
 }

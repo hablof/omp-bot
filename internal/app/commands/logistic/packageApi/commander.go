@@ -19,16 +19,20 @@ import (
 // }
 
 // var _ PackageCommander = &MypackageCommander{}
+const (
+	serviceErrMsg = "🤡🤡🤡 Ошибка сервиса 🤡🤡🤡"
+	badRequestMsg = "некорректный запрос"
+)
+
+var ErrBadRequest = errors.New("bad request")
 
 type PackageService interface {
-	Describe(packageID uint64) (*logistic.Package, error)
+	Describe(packageID uint64) (logistic.Package, error)
 	List(cursor uint64, limit uint64) ([]logistic.Package, error)
 	Create(createMap map[string]string) (uint64, error)
 	Update(packageID uint64, editMap map[string]string) error
 	Remove(packageID uint64) (bool, error)
 }
-
-var ErrBadRequest = errors.New("bad request")
 
 type MypackageCommander struct {
 	bot            *tgbotapi.BotAPI
@@ -58,14 +62,14 @@ func (pc *MypackageCommander) HandleCommand(msg *tgbotapi.Message, commandPath p
 	case "help":
 		pc.Help(msg)
 	case "get":
-		pc.Get(msg)
+		pc.Describe(msg)
 	case "list":
 		pc.List(msg)
 	case "new":
-		pc.New(msg)
+		pc.Create(msg)
 	case "delete":
-		pc.Delete(msg)
+		pc.Remove(msg)
 	case "edit":
-		pc.Edit(msg)
+		pc.Update(msg)
 	}
 }

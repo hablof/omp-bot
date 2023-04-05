@@ -67,8 +67,29 @@ func (ps *PackageService) Create(createMap map[string]string) (uint64, error) {
 }
 
 // Describe implements mypackage.PackageService
-func (*PackageService) Describe(packageID uint64) (*logistic.Package, error) {
-	panic("unimplemented")
+func (ps *PackageService) Describe(packageID uint64) (logistic.Package, error) {
+
+	req := &pb.DescribePackageV1Request{
+		PackageID: packageID,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	resp, err := ps.grpcclient.DescribePackageV1(ctx, req)
+	if err != nil {
+		return logistic.Package{}, err
+	}
+
+	unit := resp.GetValue()
+
+	return logistic.Package{
+		ID:            packageID,
+		Title:         unit.GetTitle(),
+		Material:      unit.GetMaterial(),
+		MaximumVolume: unit.GetMaximumVolume(),
+		Reusable:      unit.GetReusable(),
+	}, nil
 }
 
 // List implements mypackage.PackageService
@@ -77,8 +98,21 @@ func (*PackageService) List(cursor uint64, limit uint64) ([]logistic.Package, er
 }
 
 // Remove implements mypackage.PackageService
-func (*PackageService) Remove(packageID uint64) (bool, error) {
-	panic("unimplemented")
+func (ps *PackageService) Remove(packageID uint64) (bool, error) {
+
+	req := &pb.RemovePackageV1Request{
+		PackageID: packageID,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	resp, err := ps.grpcclient.RemovePackageV1(ctx, req)
+	if err != nil {
+		return false, err
+	}
+
+	return resp.GetSuc(), nil
 }
 
 // Update implements mypackage.PackageService

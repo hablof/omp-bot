@@ -11,8 +11,8 @@ import (
 	"github.com/hablof/omp-bot/internal/model/logistic"
 )
 
-// Edit implements PackageCommander
-func (pc *MypackageCommander) Edit(inputMsg *tgbotapi.Message) {
+// Update implements PackageCommander
+func (pc *MypackageCommander) Update(inputMsg *tgbotapi.Message) {
 	args := strings.Split(inputMsg.CommandArguments(), ";")
 
 	// if len(args) != 5 {
