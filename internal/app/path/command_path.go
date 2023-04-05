@@ -14,6 +14,14 @@ type CommandPath struct {
 
 var ErrUnknownCommand = errors.New("unknown command")
 
+func IsGeneralCommand(commandText string) bool {
+	if commandText == "help" || commandText == "start" {
+		return true
+	}
+
+	return false
+}
+
 func ParseCommand(commandText string) (CommandPath, error) {
 	commandParts := strings.SplitN(commandText, "__", 3)
 	if len(commandParts) != 3 {

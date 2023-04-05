@@ -1,4 +1,4 @@
-package mypackage
+package packageApi
 
 import (
 	"fmt"
@@ -10,24 +10,18 @@ import (
 	"github.com/hablof/omp-bot/internal/model/logistic"
 )
 
-// Edit implements PackageCommander
-func (pc *MypackageCommander) Edit(inputMsg *tgbotapi.Message) {
+// New implements PackageCommander
+func (pc *MypackageCommander) New(inputMsg *tgbotapi.Message) {
 	args := strings.Split(inputMsg.CommandArguments(), ";")
 
-	if len(args) != 5 {
+	if len(args) != 4 {
 		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, "неверно количество аргументов")); err != nil {
 			log.Printf("MypackageCommander.New: error sending reply message to chat - %v", err)
 		}
 		return
 	}
 
-	idx, err := strconv.Atoi(args[0])
-	if err != nil {
-		log.Printf("MypackageCommander.Edit: cannot parse int from command argument: %s", args[0])
-		return
-	}
-
-	volume, err := strconv.ParseFloat(strings.TrimSpace(args[3]), 32)
+	volume, err := strconv.ParseFloat(strings.TrimSpace(args[2]), 32)
 	if err != nil {
 		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, "неверно указан объём")); err != nil {
 			log.Printf("MypackageCommander.New: error sending reply message to chat - %v", err)
@@ -36,20 +30,21 @@ func (pc *MypackageCommander) Edit(inputMsg *tgbotapi.Message) {
 	}
 
 	newPackage := logistic.Package{
-		Title:         args[1],
-		Material:      args[2],
+		Title:         args[0],
+		Material:      args[1],
 		MaximumVolume: float32(volume),
-		Reusable:      strings.ToLower(strings.TrimSpace(args[4])) == "да",
+		Reusable:      strings.ToLower(strings.TrimSpace(args[3])) == "да",
 	}
 
-	if err := pc.packageService.Update(uint64(idx), newPackage); err != nil {
+	u, err := pc.packageService.Create(newPackage)
+	if err != nil {
 		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, "bad request")); err != nil {
-			log.Printf("MypackageCommander.Edit: error sending reply message to chat - %v", err)
+			log.Printf("MypackageCommander.New: error sending reply message to chat - %v", err)
 		}
 		return
 	}
 
-	if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, fmt.Sprintf("package #%d updated", idx))); err != nil {
-		log.Printf("MypackageCommander.Edit: error sending reply message to chat - %v", err)
+	if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, fmt.Sprintf("New package id: %d", u))); err != nil {
+		log.Printf("MypackageCommander.New: error sending reply message to chat - %v", err)
 	}
 }

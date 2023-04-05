@@ -1,84 +1,39 @@
 package mypackage
 
 import (
-	"fmt"
-
+	"github.com/hablof/omp-bot/internal/app/commands/logistic/packageApi"
 	"github.com/hablof/omp-bot/internal/model/logistic"
 )
 
-type PackageService interface {
-	Describe(packageID uint64) (*logistic.Package, error)
-	List(cursor uint64, limit uint64) ([]logistic.Package, error)
-	Create(logistic.Package) (uint64, error)
-	Update(packageID uint64, mypackage logistic.Package) error
-	Remove(packageID uint64) (bool, error)
+var _ packageApi.PackageService = &PackageService{}
+
+type PackageService struct{}
+
+// Create implements mypackage.PackageService
+func (*PackageService) Create(logistic.Package) (uint64, error) {
+	panic("unimplemented")
 }
 
-var _ PackageService = &DummyPackageService{}
-
-type DummyPackageService struct{}
-
-// Create implements PackageService
-func (*DummyPackageService) Create(unit logistic.Package) (uint64, error) {
-
-	logistic.AllEntities = append(logistic.AllEntities, &unit)
-
-	return uint64(len(logistic.AllEntities)), nil
+// Describe implements mypackage.PackageService
+func (*PackageService) Describe(packageID uint64) (*logistic.Package, error) {
+	panic("unimplemented")
 }
 
-// Describe implements PackageService
-func (*DummyPackageService) Describe(packageID uint64) (*logistic.Package, error) {
-
-	if !logistic.CheckInbounds(packageID) {
-		return nil, fmt.Errorf("index out of bounds")
-	}
-
-	return logistic.AllEntities[packageID-1], nil
+// List implements mypackage.PackageService
+func (*PackageService) List(cursor uint64, limit uint64) ([]logistic.Package, error) {
+	panic("unimplemented")
 }
 
-// List implements PackageService
-func (*DummyPackageService) List(cursor uint64, limit uint64) ([]logistic.Package, error) {
-
-	output := make([]logistic.Package, 0, limit)
-
-	if !logistic.CheckInbounds(cursor) {
-		return nil, fmt.Errorf("index out of bounds")
-	}
-
-	var rightBorder uint64
-	if cursor-1+limit > uint64(len(logistic.AllEntities)) {
-		rightBorder = uint64(len(logistic.AllEntities))
-	} else {
-		rightBorder = cursor - 1 + limit
-	}
-
-	for i := cursor - 1; i < rightBorder; i++ {
-		output = append(output, *logistic.AllEntities[i])
-	}
-
-	return output, nil
+// Remove implements mypackage.PackageService
+func (*PackageService) Remove(packageID uint64) (bool, error) {
+	panic("unimplemented")
 }
 
-// Remove implements PackageService
-func (*DummyPackageService) Remove(packageID uint64) (bool, error) {
-	if !logistic.CheckInbounds(packageID) {
-		return false, fmt.Errorf("index out of bounds")
-	}
-
-	logistic.AllEntities = append(logistic.AllEntities[:packageID-1], logistic.AllEntities[packageID:]...)
-	return true, nil
+// Update implements mypackage.PackageService
+func (*PackageService) Update(packageID uint64, editMap map[string]string) error {
+	panic("unimplemented")
 }
 
-// Update implements PackageService
-func (*DummyPackageService) Update(packageID uint64, mypackage logistic.Package) error {
-	if !logistic.CheckInbounds(packageID) {
-		return fmt.Errorf("index out of bounds")
-	}
-
-	logistic.AllEntities[packageID-1] = &mypackage
-	return nil
-}
-
-func NewService() *DummyPackageService {
-	return &DummyPackageService{}
+func NewService() *PackageService {
+	return &PackageService{}
 }

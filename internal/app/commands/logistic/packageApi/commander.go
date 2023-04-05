@@ -1,31 +1,39 @@
-package mypackage
+package packageApi
 
 import (
 	"log"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/hablof/omp-bot/internal/app/path"
-	"github.com/hablof/omp-bot/internal/service/logistic/mypackage"
+	"github.com/hablof/omp-bot/internal/model/logistic"
 )
 
-type PackageCommander interface {
-	Help(inputMsg *tgbotapi.Message)
-	Get(inputMsg *tgbotapi.Message)
-	List(inputMsg *tgbotapi.Message)
-	Delete(inputMsg *tgbotapi.Message)
-	New(inputMsg *tgbotapi.Message)
-	Edit(inputMsg *tgbotapi.Message)
-}
+// type PackageCommander interface {
+// 	Help(inputMsg *tgbotapi.Message)
+// 	Get(inputMsg *tgbotapi.Message)
+// 	List(inputMsg *tgbotapi.Message)
+// 	Delete(inputMsg *tgbotapi.Message)
+// 	New(inputMsg *tgbotapi.Message)
+// 	Edit(inputMsg *tgbotapi.Message)
+// }
 
-var _ PackageCommander = &MypackageCommander{}
+// var _ PackageCommander = &MypackageCommander{}
+
+type PackageService interface {
+	Describe(packageID uint64) (*logistic.Package, error)
+	List(cursor uint64, limit uint64) ([]logistic.Package, error)
+	Create(logistic.Package) (uint64, error)
+	Update(packageID uint64, editMap map[string]string) error
+	Remove(packageID uint64) (bool, error)
+}
 
 type MypackageCommander struct {
 	bot            *tgbotapi.BotAPI
-	packageService mypackage.PackageService
+	packageService PackageService
 }
 
-func NewMypackageCommander(bot *tgbotapi.BotAPI) *MypackageCommander {
-	packageService := mypackage.NewService()
+func NewMypackageCommander(bot *tgbotapi.BotAPI, packageService PackageService) *MypackageCommander {
+	// packageService := mypackage.NewService()
 
 	return &MypackageCommander{
 		bot:            bot,

@@ -4,11 +4,16 @@ import (
 	"log"
 	"runtime/debug"
 
+	// "github.com/hablof/omp-bot/internal/app/commands/demo"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/hablof/omp-bot/internal/app/commands/demo"
 	"github.com/hablof/omp-bot/internal/app/commands/logistic"
 	"github.com/hablof/omp-bot/internal/app/path"
 )
+
+const showCommandFormat = `Формат команд помощи: /help__{domain}__{subdomain}
+
+Доступные команды:
+ - /help__logistic__package`
 
 type Commander interface {
 	HandleCallback(callback *tgbotapi.CallbackQuery, callbackPath path.CallbackPath)
@@ -20,7 +25,7 @@ type Router struct {
 	bot *tgbotapi.BotAPI
 
 	// demoCommander
-	demoCommander Commander
+	// demoCommander Commander
 	// user
 	// access
 	// buy
@@ -55,7 +60,7 @@ func NewRouter(
 		// bot
 		bot: bot,
 		// demoCommander
-		demoCommander: demo.NewDemoCommander(bot),
+		// demoCommander: demo.NewDemoCommander(bot),
 		// user
 		// access
 		// buy
@@ -108,7 +113,7 @@ func (c *Router) handleCallback(callback *tgbotapi.CallbackQuery) {
 
 	switch callbackPath.Domain {
 	case "demo":
-		c.demoCommander.HandleCallback(callback, callbackPath)
+		// c.demoCommander.HandleCallback(callback, callbackPath)
 	case "user":
 		break
 	case "access":
@@ -165,9 +170,12 @@ func (c *Router) handleCallback(callback *tgbotapi.CallbackQuery) {
 }
 
 func (c *Router) handleMessage(msg *tgbotapi.Message) {
-	if !msg.IsCommand() {
-		c.showCommandFormat(msg)
+	switch {
+	case !msg.IsCommand():
+		fallthrough
 
+	case path.IsGeneralCommand(msg.Command()):
+		c.showCommandFormat(msg)
 		return
 	}
 
@@ -179,7 +187,7 @@ func (c *Router) handleMessage(msg *tgbotapi.Message) {
 
 	switch commandPath.Domain {
 	case "demo":
-		c.demoCommander.HandleCommand(msg, commandPath)
+		// c.demoCommander.HandleCommand(msg, commandPath)
 	case "user":
 		break
 	case "access":
@@ -236,7 +244,7 @@ func (c *Router) handleMessage(msg *tgbotapi.Message) {
 }
 
 func (c *Router) showCommandFormat(inputMessage *tgbotapi.Message) {
-	outputMsg := tgbotapi.NewMessage(inputMessage.Chat.ID, "Command format: /{command}__{domain}__{subdomain}")
+	outputMsg := tgbotapi.NewMessage(inputMessage.Chat.ID, showCommandFormat)
 
 	_, err := c.bot.Send(outputMsg)
 	if err != nil {

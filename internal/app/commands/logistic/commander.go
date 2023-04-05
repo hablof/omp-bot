@@ -4,8 +4,9 @@ import (
 	"log"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/hablof/omp-bot/internal/app/commands/logistic/mypackage"
+	"github.com/hablof/omp-bot/internal/app/commands/logistic/packageApi"
 	"github.com/hablof/omp-bot/internal/app/path"
+	"github.com/hablof/omp-bot/internal/service/logistic/mypackage"
 )
 
 type Commander interface {
@@ -24,7 +25,7 @@ func NewLogisticCommander(bot *tgbotapi.BotAPI) *LogisticCommander {
 	return &LogisticCommander{
 		bot: bot,
 		// subdomainCommander
-		mypackageCommander: mypackage.NewMypackageCommander(bot),
+		mypackageCommander: packageApi.NewMypackageCommander(bot, mypackage.NewService()),
 	}
 }
 
