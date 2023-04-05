@@ -36,7 +36,7 @@ func (pc *MypackageCommander) Edit(inputMsg *tgbotapi.Message) {
 	// 	}
 	// 	return
 	// }
-	editArgMap := make(map[string]string, 5)
+	editArgMap := make(map[string]string, logistic.PackageFieldsCount)
 
 	for _, arg := range args {
 		switch {

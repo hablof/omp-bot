@@ -4,8 +4,10 @@ import (
 	"log"
 	"runtime/debug"
 
-	// "github.com/hablof/omp-bot/internal/app/commands/demo"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"google.golang.org/grpc"
+
+	// "github.com/hablof/omp-bot/internal/app/commands/demo"
 	"github.com/hablof/omp-bot/internal/app/commands/logistic"
 	"github.com/hablof/omp-bot/internal/app/path"
 )
@@ -55,6 +57,7 @@ type Router struct {
 
 func NewRouter(
 	bot *tgbotapi.BotAPI,
+	cc grpc.ClientConnInterface,
 ) *Router {
 	return &Router{
 		// bot
@@ -83,7 +86,7 @@ func NewRouter(
 		// rating
 		// security
 		// cinema
-		logistic: logistic.NewLogisticCommander(bot),
+		logistic: logistic.NewLogisticCommander(bot, cc),
 		// product
 		// education
 	}

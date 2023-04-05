@@ -4,6 +4,8 @@ import (
 	"log"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"google.golang.org/grpc"
+
 	"github.com/hablof/omp-bot/internal/app/commands/logistic/packageApi"
 	"github.com/hablof/omp-bot/internal/app/path"
 	"github.com/hablof/omp-bot/internal/service/logistic/mypackage"
@@ -21,11 +23,11 @@ type LogisticCommander struct {
 	mypackageCommander Commander
 }
 
-func NewLogisticCommander(bot *tgbotapi.BotAPI) *LogisticCommander {
+func NewLogisticCommander(bot *tgbotapi.BotAPI, cc grpc.ClientConnInterface) *LogisticCommander {
 	return &LogisticCommander{
 		bot: bot,
 		// subdomainCommander
-		mypackageCommander: packageApi.NewMypackageCommander(bot, mypackage.NewService()),
+		mypackageCommander: packageApi.NewMypackageCommander(bot, mypackage.NewService(cc)),
 	}
 }
 

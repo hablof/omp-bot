@@ -1,6 +1,9 @@
 package logistic
 
-import "strconv"
+import (
+	"reflect"
+	"strconv"
+)
 
 const (
 	Title         = "название="
@@ -16,6 +19,8 @@ type Package struct {
 	MaximumVolume float32 //cm^3
 	Reusable      bool
 }
+
+var PackageFieldsCount int = reflect.TypeOf(Package{}).NumField()
 
 func (s *Package) String() string {
 	return s.Title + " id:" + strconv.FormatUint(s.ID, 10)

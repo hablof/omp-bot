@@ -22,7 +22,7 @@ import (
 type PackageService interface {
 	Describe(packageID uint64) (*logistic.Package, error)
 	List(cursor uint64, limit uint64) ([]logistic.Package, error)
-	Create(logistic.Package) (uint64, error)
+	Create(createMap map[string]string) (uint64, error)
 	Update(packageID uint64, editMap map[string]string) error
 	Remove(packageID uint64) (bool, error)
 }

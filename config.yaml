@@ -1,0 +1,9 @@
+app:
+  debug: true
+
+grpcapi:
+  target: ipv4:localhost:8082
+  attempts: 15
+
+tgbot:
+  debug: false
