@@ -143,8 +143,46 @@ func (ps *PackageService) Remove(packageID uint64) (bool, error) {
 }
 
 // Update implements mypackage.PackageService
-func (*PackageService) Update(packageID uint64, editMap map[string]string) error {
-	panic("unimplemented")
+func (ps *PackageService) Update(packageID uint64, editMap map[string]string) (bool, error) {
+
+	// filed with zero-values, which ignored by api-service
+	req := &pb.UpdatePackageV1Request{}
+
+	for key, value := range editMap {
+		switch key {
+		case logistic.Title:
+			req.Title = value
+
+		case logistic.Material:
+			req.Material = value
+
+		case logistic.MaximumVolume:
+			volume, err := strconv.ParseFloat(value, 32)
+			if err != nil {
+				log.Debug().Err(err).Msg("failed to parse volume")
+				return false, packageApi.ErrBadRequest
+			}
+			req.MaximumVolume = float32(volume)
+
+		case logistic.Reusable:
+			reusable, err := strconv.ParseBool(value)
+			if err != nil {
+				log.Debug().Err(err).Msg("failed to parse reusable")
+				return false, packageApi.ErrBadRequest
+			}
+			req.Reusable = &pb.MaybeBool{Reusable: reusable}
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	resp, err := ps.grpcclient.UpdatePackageV1(ctx, req)
+	if err != nil {
+		return false, err
+	}
+
+	return resp.GetSuc(), nil
 }
 
 func NewService(cc grpc.ClientConnInterface) *PackageService {

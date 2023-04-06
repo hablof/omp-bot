@@ -17,10 +17,10 @@ func (pc *MypackageCommander) Create(inputMsg *tgbotapi.Message) {
 
 	// количестпо полей, не считая поле ID
 	if len(args) != logistic.PackageFieldsCount-1 {
+		log.Debug().Msg("MypackageCommander.Create: wrong args count")
 		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, "неверное количество аргументов")); err != nil {
 			log.Debug().Err(err).Msg("MypackageCommander.Create: error sending reply message to chat")
 		}
-		log.Debug().Msg("MypackageCommander.Create: wrong args count")
 
 		return
 	}

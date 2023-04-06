@@ -31,7 +31,7 @@ type PackageService interface {
 	Describe(packageID uint64) (logistic.Package, error)
 	List(offset uint64, limit uint64) ([]logistic.Package, error)
 	Create(createMap map[string]string) (uint64, error)
-	Update(packageID uint64, editMap map[string]string) error
+	Update(packageID uint64, editMap map[string]string) (bool, error)
 	Remove(packageID uint64) (bool, error)
 }
 

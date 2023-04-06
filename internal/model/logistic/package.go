@@ -1,7 +1,6 @@
 package logistic
 
 import (
-	"reflect"
 	"strconv"
 )
 
@@ -20,7 +19,7 @@ type Package struct {
 	Reusable      bool
 }
 
-var PackageFieldsCount int = reflect.TypeOf(Package{}).NumField()
+var PackageFieldsCount int = 5
 
 func (s *Package) String() string {
 	return s.Title + " id:" + strconv.FormatUint(s.ID, 10)

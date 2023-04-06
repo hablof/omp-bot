@@ -2,40 +2,30 @@ package packageApi
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/hablof/omp-bot/internal/model/logistic"
+	"github.com/rs/zerolog/log"
 )
 
 // Update implements PackageCommander
 func (pc *MypackageCommander) Update(inputMsg *tgbotapi.Message) {
-	args := strings.Split(inputMsg.CommandArguments(), ";")
 
-	// if len(args) != 5 {
-	// 	if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, "неверно количество аргументов")); err != nil {
-	// 		log.Printf("MypackageCommander.New: error sending reply message to chat - %v", err)
-	// 	}
-	// 	return
-	// }
+	args := strings.Split(inputMsg.CommandArguments(), ";")
 
 	id, err := strconv.ParseUint(strings.TrimSpace(args[0]), 10, 64)
 	if err != nil {
-		log.Printf("MypackageCommander.Edit: cannot parse ID (int) from command argument: %s", args[0])
-		pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, fmt.Sprintf("идентификатор не может быть \"%s\"", args[0])))
+		log.Debug().Err(err).Msgf("MypackageCommander.Update: cannot parse ID (int) from command argument: %s", args[0])
+		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, fmt.Sprintf("идентификатор не может быть \"%s\"", args[0]))); err != nil {
+			log.Debug().Err(err).Msg("MypackageCommander.Update: error sending reply message to chat")
+		}
+
 		return
 	}
 
-	// volume, err := strconv.ParseFloat(strings.TrimSpace(args[3]), 32)
-	// if err != nil {
-	// 	if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, "неверно указан объём")); err != nil {
-	// 		log.Printf("MypackageCommander.New: error sending reply message to chat - %v", err)
-	// 	}
-	// 	return
-	// }
 	editArgMap := make(map[string]string, logistic.PackageFieldsCount)
 
 	for _, arg := range args {
@@ -53,28 +43,34 @@ func (pc *MypackageCommander) Update(inputMsg *tgbotapi.Message) {
 			editArgMap[logistic.Reusable] = strings.TrimSpace(strings.TrimPrefix(arg, logistic.Reusable))
 
 		default:
-			log.Printf("MypackageCommander.Edit: found argument: %s", arg)
-			pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, fmt.Sprintf("Неизвестный аргумент: \"%s\"", arg)))
+			log.Debug().Msgf("MypackageCommander.Update: found argument: %s", arg)
+			if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, fmt.Sprintf("Неизвестный аргумент: \"%s\"", arg))); err != nil {
+				log.Debug().Err(err).Msg("MypackageCommander.Update: error sending reply message to chat")
+			}
+
 			return
 		}
 
 	}
 
-	// newPackage := logistic.Package{
-	// 	Title:         args[1],
-	// 	Material:      args[2],
-	// 	MaximumVolume: float32(volume),
-	// 	Reusable:      strings.ToLower(strings.TrimSpace(args[4])) == "да",
-	// }
-
-	if err := pc.packageService.Update(id, editArgMap); err != nil {
+	isUpdated, err := pc.packageService.Update(id, editArgMap)
+	if err != nil {
 		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, "bad request")); err != nil {
-			log.Printf("MypackageCommander.Edit: error sending reply message to chat - %v", err)
+			log.Printf("MypackageCommander.Update: error sending reply message to chat - %v", err)
 		}
+
 		return
 	}
 
-	if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, fmt.Sprintf("Упаковка ID=%d успешно отредактирована", id))); err != nil {
-		log.Printf("MypackageCommander.Edit: error sending reply message to chat - %v", err)
+	if isUpdated {
+		log.Debug().Msgf("MypackageCommander.Update: package id %d updated", id)
+		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, fmt.Sprintf("Упаковка ID=%d успешно отредактирована", id))); err != nil {
+			log.Printf("MypackageCommander.Update: error sending reply message to chat - %v", err)
+		}
+	} else {
+		log.Debug().Msgf("MypackageCommander.Update: package id %d NOT updated", id)
+		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, fmt.Sprintf("Упаковка ID=%d НЕ отредактирована", id))); err != nil {
+			log.Printf("MypackageCommander.Update: error sending reply message to chat - %v", err)
+		}
 	}
 }

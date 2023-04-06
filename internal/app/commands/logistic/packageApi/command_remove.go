@@ -23,7 +23,7 @@ func (pc *MypackageCommander) Remove(inputMsg *tgbotapi.Message) {
 		return
 	}
 
-	removed, err := pc.packageService.Remove(id)
+	isRemoved, err := pc.packageService.Remove(id)
 	if err != nil {
 		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, serviceErrMsg)); err != nil {
 			log.Err(err).Msg("MypackageCommander.Describe: error sending reply message to chat")
@@ -33,14 +33,14 @@ func (pc *MypackageCommander) Remove(inputMsg *tgbotapi.Message) {
 		return
 	}
 
-	if removed {
+	if isRemoved {
 		log.Debug().Msgf("packageService: entity ID %d removed", id)
-		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, fmt.Sprintf("packageService: entity ID %d removed", id))); err != nil {
+		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, fmt.Sprintf("Упаковка ID=%d успешно удалена", id))); err != nil {
 			log.Err(err).Msg("MypackageCommander.Remove: error sending reply message to chat")
 		}
 	} else {
-		log.Debug().Msgf("packageService: entity ID %d not removed", id)
-		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, fmt.Sprintf("packageService: entity ID %d not removed", id))); err != nil {
+		log.Debug().Msgf("packageService: entity ID %d NOT removed", id)
+		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, fmt.Sprintf("Упаковка ID=%d НЕ удалена", id))); err != nil {
 			log.Err(err).Msg("MypackageCommander.Remove: error sending reply message to chat")
 		}
 
