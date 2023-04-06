@@ -2,8 +2,9 @@ app:
   debug: true
 
 grpcapi:
-  target: ipv4:localhost:8082
-  attempts: 15
+  target: "localhost:8082"
+  dialtimeout: 10 # Seconds
+  attempts: 6
 
 tgbot:
   debug: false

@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/hablof/omp-bot/internal/config"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog/log"
@@ -42,11 +42,11 @@ func main() {
 		Timeout: 60,
 	}
 
-	updates, err := bot.GetUpdatesChan(u)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to setup tg updates")
-		return
-	}
+	updates := bot.GetUpdatesChan(u)
+	// if err != nil {
+	// 	log.Error().Err(err).Msg("failed to setup tg updates")
+	// 	return
+	// }
 
 	cc, err := grpcclient.NewConn(cfg)
 	if err != nil {

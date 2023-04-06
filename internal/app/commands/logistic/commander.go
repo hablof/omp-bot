@@ -3,7 +3,7 @@ package logistic
 import (
 	"log"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"google.golang.org/grpc"
 
 	"github.com/hablof/omp-bot/internal/app/commands/logistic/packageApi"

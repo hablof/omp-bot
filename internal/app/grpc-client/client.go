@@ -8,6 +8,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func NewConn(cfg *config.Config) (*grpc.ClientConn, error) {
@@ -19,10 +20,15 @@ func NewConn(cfg *config.Config) (*grpc.ClientConn, error) {
 	maxAttempts := cfg.GrpcAPI.Attempts
 
 	for i := 0; i < maxAttempts; i++ {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.GrpcAPI.DialTimeout)*time.Second)
 		defer cancel()
 
-		connection, err = grpc.DialContext(ctx, cfg.GrpcAPI.Target, grpc.WithBlock())
+		connection, err = grpc.DialContext(
+			ctx,
+			cfg.GrpcAPI.Target,
+			grpc.WithBlock(),
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+		)
 		if err == nil {
 			break
 		}

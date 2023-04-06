@@ -18,8 +18,9 @@ type App struct {
 }
 
 type GrpcAPI struct {
-	Target   string `yaml:"target"`
-	Attempts int    `yaml:"attempts"`
+	Target      string `yaml:"target"`
+	Attempts    int    `yaml:"attempts"`
+	DialTimeout uint64 `yaml:"dialtimeout"` // in seconds
 }
 
 type Tgbot struct {
