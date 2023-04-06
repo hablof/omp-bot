@@ -23,7 +23,8 @@ type GrpcAPI struct {
 }
 
 type Tgbot struct {
-	Debug bool `yaml:"debug"`
+	Debug          bool `yaml:"debug"`
+	PaginationStep int  `yaml:"paginationstep"`
 }
 
 func ReadConfigYML(filePath string) (*Config, error) {

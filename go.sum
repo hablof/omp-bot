@@ -12,6 +12,8 @@ github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.2 h1:gDLXvp5S9izjldquuoAhDzccbsk
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.2/go.mod h1:7pdNwVWBBHGiCxa9lAszqCJMbfTISJ7oMftp8+UGV08=
 github.com/hablof/logistic-package-api/pkg/logistic-package-api v0.0.0-20230402194307-bbade5e29623 h1:kqq84k8nDunIeN49ZeKWVh6k4OhqFBwuPcaU4FDr1fM=
 github.com/hablof/logistic-package-api/pkg/logistic-package-api v0.0.0-20230402194307-bbade5e29623/go.mod h1:BIHBMAXjwW2Lca6Uy/OGwU1+NzNJjUu+nJL2SdJttEk=
+github.com/hablof/logistic-package-api/pkg/logistic-package-api v0.0.0-20230405201505-ea8da90567fd h1:N1cjVouL1aSHDdM65Bk5Yl4b9p4diorL5l5dqKLFScU=
+github.com/hablof/logistic-package-api/pkg/logistic-package-api v0.0.0-20230405201505-ea8da90567fd/go.mod h1:BIHBMAXjwW2Lca6Uy/OGwU1+NzNJjUu+nJL2SdJttEk=
 github.com/joho/godotenv v1.4.0 h1:3l4+N6zfMWnkbPEXKng2o2/MR5mSwTrBih4ZEkkz1lg=
 github.com/joho/godotenv v1.4.0/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=
 github.com/mattn/go-colorable v0.1.12 h1:jF+Du6AlPIjs2BiUiQlKOX0rt3SujHxPnksPKZbaA40=

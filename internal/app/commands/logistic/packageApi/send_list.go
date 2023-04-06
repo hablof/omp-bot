@@ -3,35 +3,46 @@ package packageApi
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/hablof/omp-bot/internal/app/path"
+	"github.com/rs/zerolog/log"
 )
 
-const defaultLimit = 5
+// const defaultLimit = 5
 
 func (pc *MypackageCommander) sendList(offset int, inputMsg *tgbotapi.Message) {
-	products, err := pc.packageService.List(uint64(offset)+1, defaultLimit)
+
+	if offset < 0 {
+		offset = 0
+	}
+
+	packages, err := pc.packageService.List(uint64(offset)+1, uint64(pc.paginationStep))
 	if err != nil {
-		log.Printf("packageService.List: error: %v", err)
+		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, badRequestMsg)); err != nil {
+			log.Debug().Err(err).Msg("MypackageCommander.Create: error sending reply message to chat")
+		}
+		log.Debug().Err(err).Msg("packageService.List failed")
+
 		return
 	}
 
-	outputMsgText := "Here all the packages: \n"
-	for i, p := range products {
-		outputMsgText += fmt.Sprintf("\n%d. ", i+1+offset)
-		outputMsgText += p.Title
+	var sb strings.Builder
+	sb.WriteString("Вот список упаковок: \n")
+	for i, p := range packages {
+		sb.WriteString(fmt.Sprintf("\n%d. ", i+1+offset))
+		sb.WriteString(p.String())
 	}
 
-	msg := tgbotapi.NewMessage(inputMsg.Chat.ID, outputMsgText)
+	msg := tgbotapi.NewMessage(inputMsg.Chat.ID, sb.String())
 
 	serializedDataNextPage, _ := json.Marshal(CallbackListData{
-		Offset: offset + defaultLimit,
+		Offset: offset + pc.paginationStep,
 	})
 
 	serializedDataPervPage, _ := json.Marshal(CallbackListData{
-		Offset: offset - defaultLimit,
+		Offset: offset - pc.paginationStep,
 	})
 
 	callbackPathNextPage := path.CallbackPath{
@@ -48,14 +59,28 @@ func (pc *MypackageCommander) sendList(offset int, inputMsg *tgbotapi.Message) {
 		CallbackData: string(serializedDataPervPage),
 	}
 
-	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
+	var row []tgbotapi.InlineKeyboardButton
+	switch {
+	case len(packages) < pc.paginationStep:
+		row = tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⬅️ Prev page", callbackPathPrevPage.String()))
+
+	case offset == 0:
+		row = tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Next page ➡️", callbackPathNextPage.String()))
+
+	default:
+		row = tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("⬅️ Prev page", callbackPathPrevPage.String()),
 			tgbotapi.NewInlineKeyboardButtonData("Next page ➡️", callbackPathNextPage.String()),
-		),
-	)
+		)
+	}
+	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(row)
 
 	if _, err := pc.bot.Send(msg); err != nil {
-		log.Printf("MypackageCommander.sendList: error sending reply message to chat - %v", err)
+		log.Debug().Err(err).Msg("MypackageCommander.sendList: error sending reply message to chat")
+		return
 	}
+
+	log.Debug().Msgf("MypackageCommander.sendList: list with offset %d sent", offset)
 }

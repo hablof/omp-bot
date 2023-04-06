@@ -20,6 +20,9 @@ func (pc *MypackageCommander) Describe(inputMsg *tgbotapi.Message) {
 
 	id, err := strconv.ParseUint(argument, 10, 64)
 	if err != nil {
+		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, badRequestMsg)); err != nil {
+			log.Debug().Err(err).Msg("MypackageCommander.Create: error sending reply message to chat")
+		}
 		log.Err(err).Msgf("MypackageCommander.Describe: cannot parse int from command argument: %s", argument)
 		return
 	}

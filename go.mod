@@ -16,7 +16,7 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v0.10.1 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.2 // indirect
-	github.com/hablof/logistic-package-api/pkg/logistic-package-api v0.0.0-20230402194307-bbade5e29623 // indirect
+	github.com/hablof/logistic-package-api/pkg/logistic-package-api v0.0.0-20230405201505-ea8da90567fd // indirect
 	github.com/rs/zerolog v1.29.0
 	github.com/technoweenie/multipartstreamer v1.0.1 // indirect
 	golang.org/x/net v0.8.0 // indirect

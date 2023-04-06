@@ -93,8 +93,35 @@ func (ps *PackageService) Describe(packageID uint64) (logistic.Package, error) {
 }
 
 // List implements mypackage.PackageService
-func (*PackageService) List(cursor uint64, limit uint64) ([]logistic.Package, error) {
-	panic("unimplemented")
+func (ps *PackageService) List(offset uint64, limit uint64) ([]logistic.Package, error) {
+	req := &pb.ListPackagesV1Request{
+		Offset: offset,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	resp, err := ps.grpcclient.ListPackagesV1(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	packages := resp.GetPackages()
+	out := make([]logistic.Package, 0, len(packages))
+
+	for _, pack := range packages {
+		unit := logistic.Package{
+			ID:            pack.GetID(),
+			Title:         pack.GetTitle(),
+			Material:      pack.GetMaterial(),
+			MaximumVolume: pack.GetMaximumVolume(),
+			Reusable:      pack.GetReusable(),
+		}
+
+		out = append(out, unit)
+	}
+
+	return out, nil
 }
 
 // Remove implements mypackage.PackageService

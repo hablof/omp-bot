@@ -10,6 +10,7 @@ import (
 	// "github.com/hablof/omp-bot/internal/app/commands/demo"
 	"github.com/hablof/omp-bot/internal/app/commands/logistic"
 	"github.com/hablof/omp-bot/internal/app/path"
+	"github.com/hablof/omp-bot/internal/config"
 )
 
 const showCommandFormat = `Формат команд помощи: /help__{domain}__{subdomain}
@@ -58,6 +59,7 @@ type Router struct {
 func NewRouter(
 	bot *tgbotapi.BotAPI,
 	cc grpc.ClientConnInterface,
+	cfg *config.Config,
 ) *Router {
 	return &Router{
 		// bot
@@ -86,7 +88,7 @@ func NewRouter(
 		// rating
 		// security
 		// cinema
-		logistic: logistic.NewLogisticCommander(bot, cc),
+		logistic: logistic.NewLogisticCommander(bot, cc, cfg),
 		// product
 		// education
 	}

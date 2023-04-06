@@ -7,3 +7,4 @@ grpcapi:
 
 tgbot:
   debug: false
+  paginationstep: 5

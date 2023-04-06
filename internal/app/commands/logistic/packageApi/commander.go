@@ -6,6 +6,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/hablof/omp-bot/internal/app/path"
+	"github.com/hablof/omp-bot/internal/config"
 	"github.com/hablof/omp-bot/internal/model/logistic"
 )
 
@@ -21,14 +22,14 @@ import (
 // var _ PackageCommander = &MypackageCommander{}
 const (
 	serviceErrMsg = "🤡🤡🤡 Ошибка сервиса 🤡🤡🤡"
-	badRequestMsg = "некорректный запрос"
+	badRequestMsg = "Некорректный запрос"
 )
 
 var ErrBadRequest = errors.New("bad request")
 
 type PackageService interface {
 	Describe(packageID uint64) (logistic.Package, error)
-	List(cursor uint64, limit uint64) ([]logistic.Package, error)
+	List(offset uint64, limit uint64) ([]logistic.Package, error)
 	Create(createMap map[string]string) (uint64, error)
 	Update(packageID uint64, editMap map[string]string) error
 	Remove(packageID uint64) (bool, error)
@@ -37,14 +38,16 @@ type PackageService interface {
 type MypackageCommander struct {
 	bot            *tgbotapi.BotAPI
 	packageService PackageService
+	paginationStep int
 }
 
-func NewMypackageCommander(bot *tgbotapi.BotAPI, packageService PackageService) *MypackageCommander {
+func NewMypackageCommander(bot *tgbotapi.BotAPI, packageService PackageService, cfg *config.Config) *MypackageCommander {
 	// packageService := mypackage.NewService()
 
 	return &MypackageCommander{
 		bot:            bot,
 		packageService: packageService,
+		paginationStep: cfg.Tgbot.PaginationStep,
 	}
 }
 

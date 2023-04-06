@@ -15,16 +15,20 @@ func (pc *MypackageCommander) Remove(inputMsg *tgbotapi.Message) {
 
 	id, err := strconv.ParseUint(argument, 10, 64)
 	if err != nil {
+		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, badRequestMsg)); err != nil {
+			log.Debug().Err(err).Msg("MypackageCommander.Remove: error sending reply message to chat")
+		}
 		log.Debug().Err(err).Msgf("MypackageCommander.Remove: cannot parse int from command argument: %s", argument)
+
 		return
 	}
 
 	removed, err := pc.packageService.Remove(id)
 	if err != nil {
-		log.Debug().Err(err).Msg("packageService.Remove failed")
 		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, serviceErrMsg)); err != nil {
 			log.Err(err).Msg("MypackageCommander.Describe: error sending reply message to chat")
 		}
+		log.Debug().Err(err).Msg("packageService.Remove failed")
 
 		return
 	}

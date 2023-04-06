@@ -8,6 +8,7 @@ import (
 
 	"github.com/hablof/omp-bot/internal/app/commands/logistic/packageApi"
 	"github.com/hablof/omp-bot/internal/app/path"
+	"github.com/hablof/omp-bot/internal/config"
 	"github.com/hablof/omp-bot/internal/service/logistic/mypackage"
 )
 
@@ -23,11 +24,11 @@ type LogisticCommander struct {
 	mypackageCommander Commander
 }
 
-func NewLogisticCommander(bot *tgbotapi.BotAPI, cc grpc.ClientConnInterface) *LogisticCommander {
+func NewLogisticCommander(bot *tgbotapi.BotAPI, cc grpc.ClientConnInterface, cfg *config.Config) *LogisticCommander {
 	return &LogisticCommander{
 		bot: bot,
 		// subdomainCommander
-		mypackageCommander: packageApi.NewMypackageCommander(bot, mypackage.NewService(cc)),
+		mypackageCommander: packageApi.NewMypackageCommander(bot, mypackage.NewService(cc), cfg),
 	}
 }
 

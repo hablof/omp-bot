@@ -54,7 +54,7 @@ func main() {
 		return
 	}
 
-	routerHandler := routerPkg.NewRouter(bot, cc)
+	routerHandler := routerPkg.NewRouter(bot, cc, cfg)
 
 	for update := range updates {
 		routerHandler.HandleUpdate(update)
