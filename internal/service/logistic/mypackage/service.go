@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	pb "github.com/hablof/logistic-package-api/pkg/logistic-package-api"
 	"github.com/rs/zerolog/log"
@@ -39,7 +41,7 @@ func (ps *PackageService) Create(createMap map[string]string) (uint64, error) {
 			volume, err := strconv.ParseFloat(value, 32)
 			if err != nil {
 				log.Debug().Err(err).Msg("failed to parse volume")
-				return 0, packageApi.ErrBadRequest
+				return 0, packageApi.ErrBadArgument{Argument: "MaximumVolume"}
 			}
 			req.MaximumVolume = float32(volume)
 
@@ -51,17 +53,22 @@ func (ps *PackageService) Create(createMap map[string]string) (uint64, error) {
 				req.Reusable = false
 			} else {
 				log.Debug().Msg("failed to parse reusable")
-				return 0, packageApi.ErrBadRequest
+				return 0, packageApi.ErrBadArgument{Argument: "Reusable"}
 			}
 
 		default:
-			return 0, packageApi.ErrBadRequest
+			return 0, packageApi.ErrBadArgument{Argument: key}
 		}
 	}
 
 	if err := req.Validate(); err != nil {
 		log.Debug().Err(err).Msg("PackageService.Create req validation failed")
-		return 0, err
+
+		if err, ok := err.(pb.CreatePackageV1RequestValidationError); ok {
+			return 0, packageApi.ErrBadArgument{Argument: err.Field()}
+		}
+
+		return 0, packageApi.ErrBadArgument{Argument: "unable to fetch invalid field"}
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
@@ -69,6 +76,13 @@ func (ps *PackageService) Create(createMap map[string]string) (uint64, error) {
 
 	resp, err := ps.grpcclient.CreatePackageV1(ctx, &req)
 	if err != nil {
+		if s, ok := status.FromError(err); ok {
+			switch s.Code() {
+			case codes.Internal:
+				return 0, packageApi.ErrInternal
+			}
+		}
+
 		return 0, err
 	}
 
@@ -84,7 +98,12 @@ func (ps *PackageService) Describe(packageID uint64) (logistic.Package, error) {
 
 	if err := req.Validate(); err != nil {
 		log.Debug().Err(err).Msg("PackageService.Describe req validation failed")
-		return logistic.Package{}, err
+
+		if err, ok := err.(pb.DescribePackageV1RequestValidationError); ok {
+			return logistic.Package{}, packageApi.ErrBadArgument{Argument: err.Field()}
+		}
+
+		return logistic.Package{}, packageApi.ErrBadArgument{Argument: "unable to fetch invalid field"}
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
@@ -92,6 +111,16 @@ func (ps *PackageService) Describe(packageID uint64) (logistic.Package, error) {
 
 	resp, err := ps.grpcclient.DescribePackageV1(ctx, req)
 	if err != nil {
+		if s, ok := status.FromError(err); ok {
+			switch s.Code() {
+			case codes.Internal:
+				return logistic.Package{}, packageApi.ErrInternal
+
+			case codes.NotFound:
+				return logistic.Package{}, packageApi.ErrNotFound
+			}
+		}
+
 		return logistic.Package{}, err
 	}
 
@@ -115,7 +144,12 @@ func (ps *PackageService) List(offset uint64, limit uint64) ([]logistic.Package,
 
 	if err := req.Validate(); err != nil {
 		log.Debug().Err(err).Msg("PackageService.List req validation failed")
-		return nil, err
+
+		if err, ok := err.(pb.ListPackagesV1RequestValidationError); ok {
+			return nil, packageApi.ErrBadArgument{Argument: err.Field()}
+		}
+
+		return nil, packageApi.ErrBadArgument{Argument: "unable to fetch invalid field"}
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
@@ -123,6 +157,13 @@ func (ps *PackageService) List(offset uint64, limit uint64) ([]logistic.Package,
 
 	resp, err := ps.grpcclient.ListPackagesV1(ctx, req)
 	if err != nil {
+		if s, ok := status.FromError(err); ok {
+			switch s.Code() {
+			case codes.Internal:
+				return nil, packageApi.ErrInternal
+			}
+		}
+
 		return nil, err
 	}
 
@@ -153,7 +194,12 @@ func (ps *PackageService) Remove(packageID uint64) (bool, error) {
 
 	if err := req.Validate(); err != nil {
 		log.Debug().Err(err).Msg("PackageService.Remove req validation failed")
-		return false, err
+
+		if err, ok := err.(pb.RemovePackageV1RequestValidationError); ok {
+			return false, packageApi.ErrBadArgument{Argument: err.Field()}
+		}
+
+		return false, packageApi.ErrBadArgument{Argument: "unable to fetch invalid field"}
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
@@ -161,6 +207,16 @@ func (ps *PackageService) Remove(packageID uint64) (bool, error) {
 
 	resp, err := ps.grpcclient.RemovePackageV1(ctx, req)
 	if err != nil {
+		if s, ok := status.FromError(err); ok {
+			switch s.Code() {
+			case codes.Internal:
+				return false, packageApi.ErrInternal
+
+			case codes.NotFound:
+				return false, packageApi.ErrNotFound
+			}
+		}
+
 		return false, err
 	}
 
@@ -172,7 +228,11 @@ func (ps *PackageService) Update(packageID uint64, editMap map[string]string) (b
 
 	// filed with zero-values, which ignored by api-service
 	req := &pb.UpdatePackageV1Request{
-		PackageID: packageID,
+		PackageID:     packageID,
+		Title:         "",
+		Material:      "",
+		MaximumVolume: 0,
+		Reusable:      nil,
 	}
 
 	for key, value := range editMap {
@@ -187,7 +247,7 @@ func (ps *PackageService) Update(packageID uint64, editMap map[string]string) (b
 			volume, err := strconv.ParseFloat(value, 32)
 			if err != nil {
 				log.Debug().Err(err).Msg("failed to parse volume")
-				return false, packageApi.ErrBadRequest
+				return false, packageApi.ErrBadArgument{Argument: "MaximumVolume"}
 			}
 			req.MaximumVolume = float32(volume)
 
@@ -199,14 +259,19 @@ func (ps *PackageService) Update(packageID uint64, editMap map[string]string) (b
 				req.Reusable = &pb.MaybeBool{Reusable: false}
 			} else {
 				log.Debug().Msg("failed to parse reusable")
-				return false, packageApi.ErrBadRequest
+				return false, packageApi.ErrBadArgument{Argument: "Reusable"}
 			}
 		}
 	}
 
 	if err := req.Validate(); err != nil {
 		log.Debug().Err(err).Msg("PackageService.Update req validation failed")
-		return false, err
+
+		if err, ok := err.(pb.UpdatePackageV1RequestValidationError); ok {
+			return false, packageApi.ErrBadArgument{Argument: err.Field()}
+		}
+
+		return false, packageApi.ErrBadArgument{Argument: "unable to fetch invalid field"}
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
@@ -214,6 +279,16 @@ func (ps *PackageService) Update(packageID uint64, editMap map[string]string) (b
 
 	resp, err := ps.grpcclient.UpdatePackageV1(ctx, req)
 	if err != nil {
+		if s, ok := status.FromError(err); ok {
+			switch s.Code() {
+			case codes.Internal:
+				return false, packageApi.ErrInternal
+
+			case codes.NotFound:
+				return false, packageApi.ErrNotFound
+			}
+		}
+
 		return false, err
 	}
 

@@ -1,6 +1,7 @@
 package packageApi
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -19,45 +20,53 @@ func (pc *MypackageCommander) Update(inputMsg *tgbotapi.Message) {
 	id, err := strconv.ParseUint(strings.TrimSpace(args[0]), 10, 64)
 	if err != nil {
 		log.Debug().Err(err).Msgf("MypackageCommander.Update: cannot parse ID (int) from command argument: %s", args[0])
-		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, fmt.Sprintf("идентификатор не может быть \"%s\"", args[0]))); err != nil {
-			log.Debug().Err(err).Msg("MypackageCommander.Update: error sending reply message to chat")
-		}
+		pc.sendMsgWithErrLog(inputMsg, mtdUpdate, fmt.Sprintf("идентификатор не может быть \"%s\"", args[0]))
 
 		return
 	}
 
 	editArgMap := make(map[string]string, logistic.PackageFieldsCount)
 
-	// args[1:] no info about id
-	if err, ok := pc.fillArgMap(args[1:], editArgMap).(*ErrBadArgument); ok { // дурно пахнет
-
-		log.Debug().Msgf("MypackageCommander.Update: unknown argument: %s", err.argument)
-		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, fmt.Sprintf("Некорректный аргумент: \"%s\"", err.argument))); err != nil {
-			log.Debug().Err(err).Msg("MypackageCommander.Update: error sending reply message to chat")
-		}
+	errBadArg := &ErrBadArgument{}
+	if errors.As(pc.fillArgMap(args[1:], editArgMap), errBadArg) { // args[1:] no info about id
+		arg := pc.mapArg(errBadArg.Argument)
+		log.Debug().Msgf("MypackageCommander.Update: unknown argument: %s", arg)
+		pc.sendMsgWithErrLog(inputMsg, mtdUpdate, fmt.Sprintf("Некорректный аргумент: \"%s\"", arg))
 
 		return
 	}
 
 	isUpdated, err := pc.packageService.Update(id, editArgMap)
 	if err != nil {
-		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, "bad request")); err != nil {
-			log.Printf("MypackageCommander.Update: error sending reply message to chat - %v", err)
+		log.Debug().Err(err).Msg("packageService.Update failed")
+
+		switch {
+		case errors.As(err, errBadArg):
+			arg := pc.mapArg(errBadArg.Argument)
+
+			log.Debug().Msgf("MypackageCommander.Update: unknown argument: %s", arg)
+			pc.sendMsgWithErrLog(inputMsg, mtdUpdate, fmt.Sprintf("Некорректный аргумент: \"%s\"", arg))
+
+			return
+
+		case err == ErrNotFound:
+			log.Debug().Msgf("MypackageCommander.Update: package [id=%d] not found", id)
+			pc.sendMsgWithErrLog(inputMsg, mtdUpdate, fmt.Sprintf("Упаковка [id=%d] не найдена", id))
+
+			return
 		}
+
+		pc.sendMsgWithErrLog(inputMsg, mtdUpdate, serviceErrMsg)
 
 		return
 	}
 
 	if isUpdated {
 		log.Debug().Msgf("MypackageCommander.Update: package id %d updated", id)
-		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, fmt.Sprintf("Упаковка ID=%d успешно отредактирована", id))); err != nil {
-			log.Printf("MypackageCommander.Update: error sending reply message to chat - %v", err)
-		}
+		pc.sendMsgWithErrLog(inputMsg, mtdUpdate, fmt.Sprintf("Упаковка ID=%d успешно отредактирована", id))
 	} else {
 		log.Debug().Msgf("MypackageCommander.Update: package id %d NOT updated", id)
-		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, fmt.Sprintf("Упаковка ID=%d НЕ отредактирована", id))); err != nil {
-			log.Printf("MypackageCommander.Update: error sending reply message to chat - %v", err)
-		}
+		pc.sendMsgWithErrLog(inputMsg, mtdUpdate, fmt.Sprintf("Упаковка ID=%d НЕ отредактирована", id))
 	}
 }
 
