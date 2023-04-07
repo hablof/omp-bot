@@ -41,7 +41,7 @@ func NewConn(cfg *config.Config) (*grpc.ClientConn, error) {
 		return nil, err
 	}
 
-	log.Debug().Err(err).Msg("grpc-server dial succeeded")
+	log.Info().Err(err).Msg("grpc-server dial succeeded")
 
 	return connection, nil
 }

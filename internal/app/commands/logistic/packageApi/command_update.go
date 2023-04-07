@@ -28,29 +28,15 @@ func (pc *MypackageCommander) Update(inputMsg *tgbotapi.Message) {
 
 	editArgMap := make(map[string]string, logistic.PackageFieldsCount)
 
-	for _, arg := range args {
-		switch {
-		case strings.HasPrefix(arg, logistic.Title):
-			editArgMap[logistic.Title] = strings.TrimSpace(strings.TrimPrefix(arg, logistic.Title))
+	// args[1:] no info about id
+	if err, ok := pc.fillArgMap(args[1:], editArgMap).(*ErrBadArgument); ok { // дурно пахнет
 
-		case strings.HasPrefix(arg, logistic.Material):
-			editArgMap[logistic.Material] = strings.TrimSpace(strings.TrimPrefix(arg, logistic.Material))
-
-		case strings.HasPrefix(arg, logistic.MaximumVolume):
-			editArgMap[logistic.MaximumVolume] = strings.TrimSpace(strings.TrimPrefix(arg, logistic.MaximumVolume))
-
-		case strings.HasPrefix(arg, logistic.Reusable):
-			editArgMap[logistic.Reusable] = strings.TrimSpace(strings.TrimPrefix(arg, logistic.Reusable))
-
-		default:
-			log.Debug().Msgf("MypackageCommander.Update: found argument: %s", arg)
-			if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, fmt.Sprintf("Неизвестный аргумент: \"%s\"", arg))); err != nil {
-				log.Debug().Err(err).Msg("MypackageCommander.Update: error sending reply message to chat")
-			}
-
-			return
+		log.Debug().Msgf("MypackageCommander.Update: unknown argument: %s", err.argument)
+		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, fmt.Sprintf("Некорректный аргумент: \"%s\"", err.argument))); err != nil {
+			log.Debug().Err(err).Msg("MypackageCommander.Update: error sending reply message to chat")
 		}
 
+		return
 	}
 
 	isUpdated, err := pc.packageService.Update(id, editArgMap)
@@ -73,4 +59,34 @@ func (pc *MypackageCommander) Update(inputMsg *tgbotapi.Message) {
 			log.Printf("MypackageCommander.Update: error sending reply message to chat - %v", err)
 		}
 	}
+}
+
+func (pc *MypackageCommander) fillArgMap(args []string, argMap map[string]string) error {
+
+	for _, arg := range args {
+
+		kv := strings.SplitN(arg, "=", 2)
+		if len(kv) < 2 {
+			return &ErrBadArgument{arg}
+		}
+
+		switch key := strings.ToLower(strings.TrimSpace(kv[0])); key {
+		case logistic.Title:
+			argMap[logistic.Title] = strings.TrimSpace(kv[1])
+
+		case logistic.Material:
+			argMap[logistic.Material] = strings.TrimSpace(kv[1])
+
+		case logistic.MaximumVolume:
+			argMap[logistic.MaximumVolume] = strings.TrimSpace(kv[1])
+
+		case logistic.Reusable:
+			argMap[logistic.Reusable] = strings.TrimSpace(kv[1])
+
+		default:
+			return &ErrBadArgument{arg}
+		}
+	}
+
+	return nil
 }

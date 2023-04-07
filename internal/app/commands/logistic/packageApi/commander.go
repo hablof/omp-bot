@@ -25,7 +25,17 @@ const (
 	badRequestMsg = "Некорректный запрос"
 )
 
-var ErrBadRequest = errors.New("bad request")
+var (
+	ErrBadRequest = errors.New("bad request")
+)
+
+type ErrBadArgument struct {
+	argument string
+}
+
+func (e *ErrBadArgument) Error() string {
+	return "bad argumrnt: " + e.argument
+}
 
 type PackageService interface {
 	Describe(packageID uint64) (logistic.Package, error)

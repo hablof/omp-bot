@@ -5,10 +5,10 @@ import (
 )
 
 const (
-	Title         = "название="
-	Material      = "материал="
-	MaximumVolume = "объём="
-	Reusable      = "многоразовая="
+	Title         = "название"
+	Material      = "материал"
+	MaximumVolume = "объём"
+	Reusable      = "многоразовая"
 )
 
 type Package struct {
@@ -22,5 +22,5 @@ type Package struct {
 var PackageFieldsCount int = 5
 
 func (s *Package) String() string {
-	return s.Title + " id:" + strconv.FormatUint(s.ID, 10)
+	return s.Title + " [id: " + strconv.FormatUint(s.ID, 10) + "]"
 }

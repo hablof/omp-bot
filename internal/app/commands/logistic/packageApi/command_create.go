@@ -27,27 +27,14 @@ func (pc *MypackageCommander) Create(inputMsg *tgbotapi.Message) {
 
 	createArgMap := make(map[string]string, logistic.PackageFieldsCount-1)
 
-	for _, arg := range args {
-		switch {
-		case strings.HasPrefix(arg, logistic.Title):
-			createArgMap[logistic.Title] = strings.TrimSpace(strings.TrimPrefix(arg, logistic.Title))
+	if err, ok := pc.fillArgMap(args, createArgMap).(*ErrBadArgument); ok { // дурно пахнет
 
-		case strings.HasPrefix(arg, logistic.Material):
-			createArgMap[logistic.Material] = strings.TrimSpace(strings.TrimPrefix(arg, logistic.Material))
-
-		case strings.HasPrefix(arg, logistic.MaximumVolume):
-			createArgMap[logistic.MaximumVolume] = strings.TrimSpace(strings.TrimPrefix(arg, logistic.MaximumVolume))
-
-		case strings.HasPrefix(arg, logistic.Reusable):
-			createArgMap[logistic.Reusable] = strings.TrimSpace(strings.TrimPrefix(arg, logistic.Reusable))
-
-		default:
-			log.Debug().Msgf("MypackageCommander.Create: unknown argument: %s", arg)
-			pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, fmt.Sprintf("Неизвестный аргумент: \"%s\"", arg)))
-
-			return
+		log.Debug().Msgf("MypackageCommander.Update: unknown argument: %s", err.argument)
+		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, fmt.Sprintf("Некорректный аргумент: \"%s\"", err.argument))); err != nil {
+			log.Debug().Err(err).Msg("MypackageCommander.Update: error sending reply message to chat")
 		}
 
+		return
 	}
 
 	id, err := pc.packageService.Create(createArgMap)

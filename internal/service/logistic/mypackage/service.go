@@ -3,6 +3,7 @@ package mypackage
 import (
 	"context"
 	"strconv"
+	"strings"
 	"time"
 
 	"google.golang.org/grpc"
@@ -43,16 +44,24 @@ func (ps *PackageService) Create(createMap map[string]string) (uint64, error) {
 			req.MaximumVolume = float32(volume)
 
 		case logistic.Reusable:
-			reusable, err := strconv.ParseBool(value)
-			if err != nil {
-				log.Debug().Err(err).Msg("failed to parse reusable")
+			// reusable, err := strconv.ParseBool(value)
+			if strings.ToLower(value) == "да" {
+				req.Reusable = true
+			} else if strings.ToLower(value) == "нет" {
+				req.Reusable = false
+			} else {
+				log.Debug().Msg("failed to parse reusable")
 				return 0, packageApi.ErrBadRequest
 			}
-			req.Reusable = reusable
 
 		default:
 			return 0, packageApi.ErrBadRequest
 		}
+	}
+
+	if err := req.Validate(); err != nil {
+		log.Debug().Err(err).Msg("PackageService.Create req validation failed")
+		return 0, err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
@@ -71,6 +80,11 @@ func (ps *PackageService) Describe(packageID uint64) (logistic.Package, error) {
 
 	req := &pb.DescribePackageV1Request{
 		PackageID: packageID,
+	}
+
+	if err := req.Validate(); err != nil {
+		log.Debug().Err(err).Msg("PackageService.Describe req validation failed")
+		return logistic.Package{}, err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
@@ -96,6 +110,12 @@ func (ps *PackageService) Describe(packageID uint64) (logistic.Package, error) {
 func (ps *PackageService) List(offset uint64, limit uint64) ([]logistic.Package, error) {
 	req := &pb.ListPackagesV1Request{
 		Offset: offset,
+		Limit:  limit,
+	}
+
+	if err := req.Validate(); err != nil {
+		log.Debug().Err(err).Msg("PackageService.List req validation failed")
+		return nil, err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
@@ -131,6 +151,11 @@ func (ps *PackageService) Remove(packageID uint64) (bool, error) {
 		PackageID: packageID,
 	}
 
+	if err := req.Validate(); err != nil {
+		log.Debug().Err(err).Msg("PackageService.Remove req validation failed")
+		return false, err
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
@@ -146,7 +171,9 @@ func (ps *PackageService) Remove(packageID uint64) (bool, error) {
 func (ps *PackageService) Update(packageID uint64, editMap map[string]string) (bool, error) {
 
 	// filed with zero-values, which ignored by api-service
-	req := &pb.UpdatePackageV1Request{}
+	req := &pb.UpdatePackageV1Request{
+		PackageID: packageID,
+	}
 
 	for key, value := range editMap {
 		switch key {
@@ -165,13 +192,21 @@ func (ps *PackageService) Update(packageID uint64, editMap map[string]string) (b
 			req.MaximumVolume = float32(volume)
 
 		case logistic.Reusable:
-			reusable, err := strconv.ParseBool(value)
-			if err != nil {
-				log.Debug().Err(err).Msg("failed to parse reusable")
+			// reusable, err := strconv.ParseBool(value)
+			if strings.ToLower(value) == "да" {
+				req.Reusable = &pb.MaybeBool{Reusable: true}
+			} else if strings.ToLower(value) == "нет" {
+				req.Reusable = &pb.MaybeBool{Reusable: false}
+			} else {
+				log.Debug().Msg("failed to parse reusable")
 				return false, packageApi.ErrBadRequest
 			}
-			req.Reusable = &pb.MaybeBool{Reusable: reusable}
 		}
+	}
+
+	if err := req.Validate(); err != nil {
+		log.Debug().Err(err).Msg("PackageService.Update req validation failed")
+		return false, err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)

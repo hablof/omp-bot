@@ -18,7 +18,7 @@ func (pc *MypackageCommander) sendList(offset int, inputMsg *tgbotapi.Message) {
 		offset = 0
 	}
 
-	packages, err := pc.packageService.List(uint64(offset)+1, uint64(pc.paginationStep))
+	packages, err := pc.packageService.List(uint64(offset), uint64(pc.paginationStep))
 	if err != nil {
 		if _, err := pc.bot.Send(tgbotapi.NewMessage(inputMsg.Chat.ID, badRequestMsg)); err != nil {
 			log.Debug().Err(err).Msg("MypackageCommander.Create: error sending reply message to chat")
