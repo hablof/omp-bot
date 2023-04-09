@@ -9,3 +9,11 @@ grpcapi:
 tgbot:
   debug: false
   paginationstep: 5
+
+kafka:
+  # capacity: 512
+  topic: "omp-tgbot-commands"
+  # groupId: "logistic-package-api"
+  brokers:
+    # - "kafka:9092"
+    - "localhost:9094"

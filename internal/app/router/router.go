@@ -23,9 +23,14 @@ type Commander interface {
 	HandleCommand(callback *tgbotapi.Message, commandPath path.CommandPath)
 }
 
+type CommandSender interface {
+	Send(update tgbotapi.Update) error
+}
+
 type Router struct {
 	// bot
-	bot *tgbotapi.BotAPI
+	bot           *tgbotapi.BotAPI
+	commandSender CommandSender // kafka
 
 	// demoCommander
 	// demoCommander Commander
@@ -60,10 +65,12 @@ func NewRouter(
 	bot *tgbotapi.BotAPI,
 	cc grpc.ClientConnInterface,
 	cfg *config.Config,
+	commandSender CommandSender,
 ) *Router {
 	return &Router{
 		// bot
-		bot: bot,
+		bot:           bot,
+		commandSender: commandSender,
 		// demoCommander
 		// demoCommander: demo.NewDemoCommander(bot),
 		// user
@@ -100,6 +107,8 @@ func (c *Router) HandleUpdate(update tgbotapi.Update) {
 			log.Printf("recovered from panic: %v\n%v", panicValue, string(debug.Stack()))
 		}
 	}()
+
+	c.commandSender.Send(update)
 
 	switch {
 	case update.CallbackQuery != nil:

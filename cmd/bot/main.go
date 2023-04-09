@@ -9,6 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	grpcclient "github.com/hablof/omp-bot/internal/app/grpc-client"
+	"github.com/hablof/omp-bot/internal/app/kafka"
 	routerPkg "github.com/hablof/omp-bot/internal/app/router"
 )
 
@@ -54,7 +55,13 @@ func main() {
 		return
 	}
 
-	routerHandler := routerPkg.NewRouter(bot, cc, cfg)
+	kafkaProducer, err := kafka.NewKafkaProducer(cfg.Kafka)
+	if err != nil {
+		log.Error().Err(err).Msgf("Failed init kafka")
+		return
+	}
+
+	routerHandler := routerPkg.NewRouter(bot, cc, cfg, kafkaProducer)
 
 	for update := range updates {
 		routerHandler.HandleUpdate(update)

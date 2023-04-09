@@ -11,6 +11,7 @@ type Config struct {
 	App     App     `yaml:"app"`
 	GrpcAPI GrpcAPI `yaml:"grpcapi"`
 	Tgbot   Tgbot   `yaml:"tgbot"`
+	Kafka   Kafka   `yaml:"kafka"`
 }
 
 type App struct {
@@ -26,6 +27,13 @@ type GrpcAPI struct {
 type Tgbot struct {
 	Debug          bool `yaml:"debug"`
 	PaginationStep int  `yaml:"paginationstep"`
+}
+
+type Kafka struct {
+	// Capacity uint64   `yaml:"capacity"`
+	Topic string `yaml:"topic"`
+	// GroupID  string   `yaml:"groupId"`
+	Brokers []string `yaml:"brokers"`
 }
 
 func ReadConfigYML(filePath string) (*Config, error) {
