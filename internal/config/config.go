@@ -12,6 +12,7 @@ type Config struct {
 	GrpcAPI GrpcAPI `yaml:"grpcapi"`
 	Tgbot   Tgbot   `yaml:"tgbot"`
 	Kafka   Kafka   `yaml:"kafka"`
+	Redis   Redis   `yaml:"redis"`
 }
 
 type App struct {
@@ -31,9 +32,17 @@ type Tgbot struct {
 
 type Kafka struct {
 	// Capacity uint64   `yaml:"capacity"`
-	Topic string `yaml:"topic"`
 	// GroupID  string   `yaml:"groupId"`
-	Brokers []string `yaml:"brokers"`
+	TgCommandTopic  string   `yaml:"tgCommandTopic"`
+	CacheEventTopic string   `yaml:"cacheEventTopic"`
+	Brokers         []string `yaml:"brokers"`
+}
+
+type Redis struct {
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	Password string `yaml:"password"`
+	DB       int    `yaml:"db"`
 }
 
 func ReadConfigYML(filePath string) (*Config, error) {

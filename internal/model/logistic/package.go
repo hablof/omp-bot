@@ -12,11 +12,11 @@ const (
 )
 
 type Package struct {
-	ID            uint64
-	Title         string
-	Material      string
-	MaximumVolume float32 //cm^3
-	Reusable      bool
+	ID            uint64  `json:"id"`
+	Title         string  `json:"title"`
+	Material      string  `json:"material"`
+	MaximumVolume float32 `json:"volume"`
+	Reusable      bool    `json:"reusable"`
 }
 
 var PackageFieldsCount int = 5

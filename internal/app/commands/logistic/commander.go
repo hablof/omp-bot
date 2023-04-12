@@ -24,11 +24,11 @@ type LogisticCommander struct {
 	mypackageCommander Commander
 }
 
-func NewLogisticCommander(bot *tgbotapi.BotAPI, cc grpc.ClientConnInterface, cfg *config.Config) *LogisticCommander {
+func NewLogisticCommander(bot *tgbotapi.BotAPI, cc grpc.ClientConnInterface, cache mypackage.CacheDict, ces mypackage.CacheEventSender, cfg *config.Config) *LogisticCommander {
 	return &LogisticCommander{
 		bot: bot,
 		// subdomainCommander
-		mypackageCommander: packageApi.NewMypackageCommander(bot, mypackage.NewService(cc), cfg),
+		mypackageCommander: packageApi.NewMypackageCommander(bot, mypackage.NewService(cc, cache, ces), cfg),
 	}
 }
 

@@ -10,13 +10,36 @@ import (
 	"github.com/hablof/omp-bot/internal/app/router"
 	"github.com/hablof/omp-bot/internal/config"
 	"github.com/hablof/omp-bot/internal/model"
+	"github.com/hablof/omp-bot/internal/service/logistic/mypackage"
 )
 
 var _ router.CommandSender = &KafkaProducer{}
+var _ mypackage.CacheEventSender = &KafkaProducer{}
 
 type KafkaProducer struct {
-	producer sarama.SyncProducer
-	topic    string
+	producer        sarama.SyncProducer
+	cacheEventTopic string
+	tgCommandTopic  string
+}
+
+// SendCacheEvent implements mypackage.CacheEventSender
+func (kp *KafkaProducer) SendCacheEvent(event model.CacheEvent) error {
+	b, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+
+	msg := sarama.ProducerMessage{
+		Topic: kp.cacheEventTopic,
+		Value: sarama.ByteEncoder(b),
+	}
+
+	_, _, err = kp.producer.SendMessage(&msg)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Send implements router.CommandSender
@@ -40,11 +63,14 @@ func (kp *KafkaProducer) Send(update tgbotapi.Update) error {
 	}
 
 	msg := sarama.ProducerMessage{
-		Topic: kp.topic,
+		Topic: kp.tgCommandTopic,
 		Value: sarama.ByteEncoder(b),
 	}
 
-	kp.producer.SendMessage(&msg)
+	_, _, err = kp.producer.SendMessage(&msg)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -62,7 +88,8 @@ func NewKafkaProducer(cfg config.Kafka) (*KafkaProducer, error) {
 	}
 
 	return &KafkaProducer{
-		producer: sp,
-		topic:    cfg.Topic,
+		producer:        sp,
+		cacheEventTopic: cfg.CacheEventTopic,
+		tgCommandTopic:  cfg.TgCommandTopic,
 	}, nil
 }

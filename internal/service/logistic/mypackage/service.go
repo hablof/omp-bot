@@ -14,6 +14,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/hablof/omp-bot/internal/app/commands/logistic/packageApi"
+	"github.com/hablof/omp-bot/internal/model"
 	"github.com/hablof/omp-bot/internal/model/logistic"
 )
 
@@ -21,43 +22,109 @@ const defaultTimeout = 10 * time.Second
 
 var _ packageApi.PackageService = &PackageService{}
 
+type CacheDict interface {
+	SetDescription(unit logistic.Package) error
+	ReadDescription(id uint64) (*logistic.Package, error)
+	RemoveDescription(id uint64) error
+}
+
+type CacheEventSender interface {
+	SendCacheEvent(event model.CacheEvent) error
+}
+
 type PackageService struct {
 	grpcclient pb.LogisticPackageApiServiceClient
+
+	// cache policy:
+	// on Create:   set new description;
+	// on Describe: try read cache, if failed - set new description;
+	// on Remove:   remove cache entry;
+	// on Update:   remove cache entry;
+	// on List:     nothing;
+	cache            CacheDict
+	cacheEventSender CacheEventSender // kafka
+}
+
+func (ps *PackageService) asyncSendEvent(packageID uint64, eventType model.CacheEventType, success bool) {
+
+	timestamp := time.Now()
+
+	go func(packageID uint64, eventType model.CacheEventType, success bool, timestamp time.Time) {
+		err := ps.cacheEventSender.SendCacheEvent(model.CacheEvent{
+			PackageID: packageID,
+			EventType: eventType,
+			Success:   success,
+			Timestamp: timestamp,
+		})
+		if err != nil {
+			log.Debug().Err(err).Msg("failed send cache event info")
+		}
+	}(packageID, eventType, success, timestamp)
 }
 
 // Create implements mypackage.PackageService
 func (ps *PackageService) Create(createMap map[string]string) (uint64, error) {
 
+	// call general create func,
+	// returns with
+	// 1) database entry id
+	// 2) model obj to set cache
+	// 3) error
+	id, unit, err := ps.create(createMap)
+	if err != nil {
+		return 0, err
+	}
+
+	if err := ps.cache.SetDescription(unit); err != nil {
+		log.Debug().Err(err).Msg("failed set cache description")
+		ps.asyncSendEvent(id, model.SetDescription, false)
+	} else {
+		ps.asyncSendEvent(id, model.SetDescription, true)
+	}
+
+	return id, nil
+}
+
+// General create function.
+// Works throuht grpc api.
+func (ps *PackageService) create(createMap map[string]string) (uint64, logistic.Package, error) {
+
+	unit := logistic.Package{}
 	req := pb.CreatePackageV1Request{}
 	for key, value := range createMap {
 		switch key {
 		case logistic.Title:
 			req.Title = value
+			unit.Title = value
 
 		case logistic.Material:
 			req.Material = value
+			unit.Material = value
 
 		case logistic.MaximumVolume:
 			volume, err := strconv.ParseFloat(value, 32)
 			if err != nil {
 				log.Debug().Err(err).Msg("failed to parse volume")
-				return 0, packageApi.ErrBadArgument{Argument: "MaximumVolume"}
+				return 0, logistic.Package{}, packageApi.ErrBadArgument{Argument: "MaximumVolume"}
 			}
 			req.MaximumVolume = float32(volume)
+			unit.MaximumVolume = float32(volume)
 
 		case logistic.Reusable:
-			// reusable, err := strconv.ParseBool(value)
+
 			if strings.ToLower(value) == "да" {
 				req.Reusable = true
+				unit.Reusable = true
 			} else if strings.ToLower(value) == "нет" {
 				req.Reusable = false
+				unit.Reusable = false
 			} else {
 				log.Debug().Msg("failed to parse reusable")
-				return 0, packageApi.ErrBadArgument{Argument: "Reusable"}
+				return 0, logistic.Package{}, packageApi.ErrBadArgument{Argument: "Reusable"}
 			}
 
 		default:
-			return 0, packageApi.ErrBadArgument{Argument: key}
+			return 0, logistic.Package{}, packageApi.ErrBadArgument{Argument: key}
 		}
 	}
 
@@ -65,10 +132,10 @@ func (ps *PackageService) Create(createMap map[string]string) (uint64, error) {
 		log.Debug().Err(err).Msg("PackageService.Create req validation failed")
 
 		if err, ok := err.(pb.CreatePackageV1RequestValidationError); ok {
-			return 0, packageApi.ErrBadArgument{Argument: err.Field()}
+			return 0, logistic.Package{}, packageApi.ErrBadArgument{Argument: err.Field()}
 		}
 
-		return 0, packageApi.ErrBadArgument{Argument: "unable to fetch invalid field"}
+		return 0, logistic.Package{}, packageApi.ErrBadArgument{Argument: "unable to fetch invalid field"}
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
@@ -79,19 +146,49 @@ func (ps *PackageService) Create(createMap map[string]string) (uint64, error) {
 		if s, ok := status.FromError(err); ok {
 			switch s.Code() {
 			case codes.Internal:
-				return 0, packageApi.ErrInternal
+				return 0, logistic.Package{}, packageApi.ErrInternal
 			}
 		}
 
-		return 0, err
+		return 0, logistic.Package{}, err
 	}
 
-	return resp.GetID(), nil
+	unit.ID = resp.GetID()
+
+	return resp.GetID(), unit, nil
 }
 
 // Describe implements mypackage.PackageService
 func (ps *PackageService) Describe(packageID uint64) (logistic.Package, error) {
 
+	if unit, err := ps.cache.ReadDescription(packageID); err != nil {
+		log.Debug().Msg("cache miss")
+		ps.asyncSendEvent(packageID, model.ReadDescription, false)
+	} else {
+		log.Debug().Msg("cache hit")
+		ps.asyncSendEvent(packageID, model.ReadDescription, true)
+
+		return *unit, nil
+	}
+
+	unit, err := ps.describe(packageID)
+	if err != nil {
+		return logistic.Package{}, err
+	}
+
+	if err := ps.cache.SetDescription(unit); err != nil {
+		log.Debug().Err(err).Msg("failed set cache description")
+		ps.asyncSendEvent(packageID, model.SetDescription, false)
+	} else {
+		ps.asyncSendEvent(packageID, model.SetDescription, true)
+	}
+
+	return unit, nil
+}
+
+// General describe function.
+// Works throuht grpc api.
+func (ps *PackageService) describe(packageID uint64) (logistic.Package, error) {
 	req := &pb.DescribePackageV1Request{
 		PackageID: packageID,
 	}
@@ -124,15 +221,16 @@ func (ps *PackageService) Describe(packageID uint64) (logistic.Package, error) {
 		return logistic.Package{}, err
 	}
 
-	unit := resp.GetValue()
-
-	return logistic.Package{
+	pbPackage := resp.GetValue()
+	unit := logistic.Package{
 		ID:            packageID,
-		Title:         unit.GetTitle(),
-		Material:      unit.GetMaterial(),
-		MaximumVolume: unit.GetMaximumVolume(),
-		Reusable:      unit.GetReusable(),
-	}, nil
+		Title:         pbPackage.GetTitle(),
+		Material:      pbPackage.GetMaterial(),
+		MaximumVolume: pbPackage.GetMaximumVolume(),
+		Reusable:      pbPackage.GetReusable(),
+	}
+
+	return unit, nil
 }
 
 // List implements mypackage.PackageService
@@ -220,6 +318,14 @@ func (ps *PackageService) Remove(packageID uint64) (bool, error) {
 		return false, err
 	}
 
+	if resp.GetSuc() {
+		if err := ps.cache.RemoveDescription(packageID); err != nil {
+			ps.asyncSendEvent(packageID, model.RemoveDescription, false)
+		} else {
+			ps.asyncSendEvent(packageID, model.RemoveDescription, true)
+		}
+	}
+
 	return resp.GetSuc(), nil
 }
 
@@ -292,11 +398,21 @@ func (ps *PackageService) Update(packageID uint64, editMap map[string]string) (b
 		return false, err
 	}
 
+	if resp.GetSuc() {
+		if err := ps.cache.RemoveDescription(packageID); err != nil {
+			ps.asyncSendEvent(packageID, model.RemoveDescription, false)
+		} else {
+			ps.asyncSendEvent(packageID, model.RemoveDescription, true)
+		}
+	}
+
 	return resp.GetSuc(), nil
 }
 
-func NewService(cc grpc.ClientConnInterface) *PackageService {
+func NewService(cc grpc.ClientConnInterface, ch CacheDict, ces CacheEventSender) *PackageService {
 	return &PackageService{
-		grpcclient: pb.NewLogisticPackageApiServiceClient(cc),
+		grpcclient:       pb.NewLogisticPackageApiServiceClient(cc),
+		cache:            ch,
+		cacheEventSender: ces,
 	}
 }

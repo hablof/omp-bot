@@ -4,13 +4,14 @@ import (
 	"os"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/hablof/omp-bot/internal/config"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog/log"
 
+	"github.com/hablof/omp-bot/internal/app/cache"
 	grpcclient "github.com/hablof/omp-bot/internal/app/grpc-client"
 	"github.com/hablof/omp-bot/internal/app/kafka"
 	routerPkg "github.com/hablof/omp-bot/internal/app/router"
+	"github.com/hablof/omp-bot/internal/config"
 )
 
 func main() {
@@ -60,9 +61,18 @@ func main() {
 		log.Error().Err(err).Msgf("Failed init kafka")
 		return
 	}
+	log.Info().Msg("Kafka producer started")
 
-	routerHandler := routerPkg.NewRouter(bot, cc, cfg, kafkaProducer)
+	redis, err := cache.NewCache(*cfg)
+	if err != nil {
+		log.Error().Err(err).Msgf("Failed init redis")
+		return
+	}
+	log.Info().Msg("Redis client started")
 
+	routerHandler := routerPkg.NewRouter(bot, cc, cfg, kafkaProducer, redis, kafkaProducer)
+
+	log.Info().Msg("Ready to handle updates")
 	for update := range updates {
 		routerHandler.HandleUpdate(update)
 	}
