@@ -33,6 +33,7 @@ type Tgbot struct {
 type Kafka struct {
 	// Capacity uint64   `yaml:"capacity"`
 	// GroupID  string   `yaml:"groupId"`
+	MaxAttempts     int      `yaml:"attempts"`
 	TgCommandTopic  string   `yaml:"tgCommandTopic"`
 	CacheEventTopic string   `yaml:"cacheEventTopic"`
 	Brokers         []string `yaml:"brokers"`

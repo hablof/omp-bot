@@ -6,6 +6,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/rs/zerolog/log"
 
 	"github.com/hablof/omp-bot/internal/app/router"
 	"github.com/hablof/omp-bot/internal/config"
@@ -20,6 +21,7 @@ type KafkaProducer struct {
 	producer        sarama.SyncProducer
 	cacheEventTopic string
 	tgCommandTopic  string
+	maxAttempts     int
 }
 
 // SendCacheEvent implements mypackage.CacheEventSender
@@ -67,7 +69,15 @@ func (kp *KafkaProducer) Send(update tgbotapi.Update) error {
 		Value: sarama.ByteEncoder(b),
 	}
 
-	_, _, err = kp.producer.SendMessage(&msg)
+	for i := 0; i < kp.maxAttempts; i++ {
+		_, _, err = kp.producer.SendMessage(&msg)
+		if err == nil {
+			break
+		}
+
+		log.Debug().Err(err).Msgf("KafkaProducer.Send: failed attempt #%d to send message", i+1)
+		time.Sleep(200 * time.Millisecond)
+	}
 	if err != nil {
 		return err
 	}
@@ -91,5 +101,6 @@ func NewKafkaProducer(cfg config.Kafka) (*KafkaProducer, error) {
 		producer:        sp,
 		cacheEventTopic: cfg.CacheEventTopic,
 		tgCommandTopic:  cfg.TgCommandTopic,
+		maxAttempts:     cfg.MaxAttempts,
 	}, nil
 }

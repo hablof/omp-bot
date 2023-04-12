@@ -12,9 +12,10 @@ tgbot:
 
 kafka:
   # capacity: 512
+  # groupId: "logistic-package-api"
+  attempts: 5
   tgCommandTopic: "omp-tgbot-commands"
   cacheEventTopic: "omp-tgbot-cache-events"
-  # groupId: "logistic-package-api"
   brokers:
     # - "kafka:9092"
     - "localhost:9094"
