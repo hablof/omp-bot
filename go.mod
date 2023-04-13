@@ -1,6 +1,6 @@
 module github.com/hablof/omp-bot
 
-go 1.17
+go 1.19
 
 // github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible
 require github.com/joho/godotenv v1.4.0

@@ -2,7 +2,8 @@ app:
   debug: true
 
 grpcapi:
-  target: "localhost:8082"
+  # target: "localhost:8082"
+  target: "host.docker.internal:8082"
   dialtimeout: 10 # Seconds
   attempts: 6
 
@@ -18,10 +19,12 @@ kafka:
   cacheEventTopic: "omp-tgbot-cache-events"
   brokers:
     # - "kafka:9092"
-    - "localhost:9094"
+    # - "localhost:9094"
+    - "host.docker.internal:9094"
 
 redis:
-  host: localhost
+  host: host.docker.internal
+  # host: localhost
   port: 6379
   password: 
   DB: 0

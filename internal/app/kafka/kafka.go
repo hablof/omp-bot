@@ -92,7 +92,20 @@ func NewKafkaProducer(cfg config.Kafka) (*KafkaProducer, error) {
 	config.Producer.RequiredAcks = sarama.WaitForAll
 	config.Producer.Return.Successes = true
 
-	sp, err := sarama.NewSyncProducer(cfg.Brokers, config)
+	var (
+		sp  sarama.SyncProducer
+		err error
+	)
+	for i := 0; i < cfg.MaxAttempts; i++ {
+		sp, err = sarama.NewSyncProducer(cfg.Brokers, config)
+
+		if err == nil {
+			break
+		}
+
+		log.Info().Err(err).Msgf("NewKafkaProducer: failed attempt %d/%d to connect to kafka", i+1, cfg.MaxAttempts)
+		time.Sleep(10 * time.Second)
+	}
 	if err != nil {
 		return nil, err
 	}

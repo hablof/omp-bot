@@ -17,7 +17,7 @@ import (
 func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Error().Err(err).Msg("failed to load ENV")
-		return
+		// return
 	}
 
 	token, found := os.LookupEnv("TOKEN")
@@ -26,9 +26,10 @@ func main() {
 		return
 	}
 
-	cfg, err := config.ReadConfigYML("config.yaml")
+	cfg, err := config.ReadConfigYML("config.yml")
 	if err != nil {
 		log.Error().Err(err).Msg("failed to read config")
+		return
 	}
 
 	bot, err := tgbotapi.NewBotAPI(token)
